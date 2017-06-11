@@ -1,0 +1,191 @@
+<canvas id="game-canvas" width="800" height="600"></canvas>
+<script>
+var FPS = 30
+var ctx, canvas, horizontalCanvasCenter, verticalCanvasCenter
+
+var BALL_SIZE = 16
+var ballX = 50
+var ballSpeedX = 9
+var ballY = 50
+var ballSpeedY = 9
+
+var WINNING_SCORE = 5
+var player1Score = 0
+var player2Score = 0
+
+var onWinScreen = false
+
+var PADDLE_HEIGHT = 100
+var PADDLE_THICKNESS = 10
+var PADDLE_OFFSET = 5
+var paddle1Y = 250
+var paddle2Y = 250
+
+window.onload = function main() {
+  canvas = document.getElementById('game-canvas')
+  ctx = canvas.getContext('2d')
+
+  horizontalCanvasCenter = canvas.width / 2
+  verticalCanvasCenter = canvas.height / 2
+
+  setInterval(function () {
+    game()
+    draw()
+  }, 1000 / FPS)
+
+  canvas.addEventListener('mousemove', function (e) {
+    paddle1Y = getMousePosition(e).y - (PADDLE_HEIGHT / 2)
+  })
+
+  canvas.addEventListener('click', function (e) {
+    if (onWinScreen) {
+      onWinScreen = false
+      player1Score = 0
+      player2Score = 0
+    }
+  })
+}
+
+function game() {
+  if (onWinScreen) {
+    return
+  }
+
+  moveComputerPaddle()
+  moveBall()
+  detectPaddleCollision()
+  detectScoring()
+  detectVerticalBounce()
+}
+
+function draw() {
+  drawRect(0, 0, canvas.width, canvas.height, 'black')
+
+  if (onWinScreen) {
+    drawWinScreen()
+    return;
+  }
+
+  drawNet()
+
+  // Paddles
+  drawRect(canvas.width - PADDLE_THICKNESS - PADDLE_OFFSET, paddle2Y, PADDLE_THICKNESS, PADDLE_HEIGHT, 'white')
+  drawRect(PADDLE_OFFSET, paddle1Y, PADDLE_THICKNESS, PADDLE_HEIGHT, 'white')
+
+  // Ball
+  drawCircle(ballX, ballY, BALL_SIZE / 2, 'white')
+
+  drawScores()
+}
+
+function drawNet() {
+  for (var i = 0; i < canvas.height; i += 40) {
+    drawRect((horizontalCanvasCenter) - 1, i + 10, 2, 20, 'white')
+  }
+}
+
+function drawScores() {
+  ctx.font = 'bold 21px monospace'
+  ctx.textAlign = 'center'
+  ctx.fillText(player1Score, canvas.width * 0.25, canvas.height * 0.1)
+  ctx.fillText(player2Score, canvas.width * 0.75, canvas.height * 0.1)
+}
+
+function drawWinScreen() {
+  var won = player1Score >= WINNING_SCORE ? 'Player' : 'Computer'
+
+  ctx.fillStyle = 'white'
+  ctx.font = 'bold 28px monospace'
+  ctx.textAlign = 'center'
+  ctx.fillText(won + ' won!', horizontalCanvasCenter, verticalCanvasCenter - 30)
+  ctx.font = 'bold 18px monospace'
+  ctx.fillText('Click to continue', horizontalCanvasCenter, verticalCanvasCenter + 30)
+}
+
+function moveComputerPaddle() {
+  var paddleCenter = paddle2Y + (PADDLE_HEIGHT / 2)
+
+  if (paddleCenter + (PADDLE_HEIGHT / 6) < ballY) {
+    paddle2Y += 6
+  } else if (paddleCenter - (PADDLE_HEIGHT / 6) > ballY) {
+    paddle2Y -= 6
+  }
+}
+
+function moveBall() {
+  ballX += ballSpeedX
+  ballY += ballSpeedY
+}
+
+function detectPaddleCollision() {
+  var paddleCollisionOffset = PADDLE_THICKNESS + PADDLE_OFFSET + (BALL_SIZE / 2)
+
+  if (
+    ballX <= paddleCollisionOffset && ballY > paddle1Y &&
+    ballY < paddle1Y + PADDLE_HEIGHT
+  ) {
+    var deltaY = ballY - (paddle1Y + (PADDLE_HEIGHT / 2))
+    ballSpeedY = deltaY / 3
+    ballSpeedX *= -1
+  }
+
+  if (
+    ballX >= canvas.width - paddleCollisionOffset &&
+    ballY > paddle2Y && ballY < paddle2Y + PADDLE_HEIGHT
+  ) {
+    var deltaY = ballY - (paddle2Y + (PADDLE_HEIGHT / 2))
+    ballSpeedY = deltaY / 3
+    ballSpeedX *= -1
+  }
+}
+
+function detectScoring() {
+  if (ballX <= -BALL_SIZE) {
+    player2Score++
+    resetBall()
+  }
+
+  if (ballX >= canvas.width + BALL_SIZE) {
+    player1Score++
+    resetBall()
+  }
+}
+
+function detectVerticalBounce() {
+  if (ballY <= 0 || ballY >= canvas.height) {
+    ballSpeedY *= -1
+  }
+}
+
+function resetBall() {
+  if (player1Score >= WINNING_SCORE || player2Score >= WINNING_SCORE) {
+    onWinScreen = true
+  }
+
+  ballSpeedX *= -1
+  ballX = horizontalCanvasCenter
+  ballY = verticalCanvasCenter
+}
+
+function getMousePosition(e) {
+  var rect = canvas.getBoundingClientRect()
+  var root = document.documentElement
+
+  return {
+    x: e.clientX - rect.left - root.scrollLeft,
+    y: e.clientY - rect.top- root.scrollTop
+  }
+}
+
+function drawRect(x, y, width, height, color) {
+  ctx.fillStyle = color
+  ctx.fillRect(x, y, width, height)
+}
+
+function drawCircle(x, y, radius, color) {
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.arc(x, y, radius, 0, Math.PI * 2, true)
+  ctx.fill()
+}
+</script>
