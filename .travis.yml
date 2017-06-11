@@ -1,0 +1,2 @@
+after_success:
+  - find . -type f -exec curl -3 --ftp-create-dirs -T {} ftp://$FTP_USER:$FTP_PASSWORD@ftp.carehr.nl/public_html/nielsgerritsen/html5-canvas/ \;
